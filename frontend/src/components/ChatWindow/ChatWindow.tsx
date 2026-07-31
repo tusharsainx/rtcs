@@ -90,8 +90,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </span>
                     <div className="message-bubble">{msg.content}</div>
                     <div className="message-info">
-                      <span>#{msg.sequence}</span>
-                      <span>•</span>
                       <span>{formatDate(msg.createdAt)}</span>
                     </div>
                   </div>

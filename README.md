@@ -229,6 +229,14 @@ docker compose up -d --build
 * **User Service GraphQL Playground**: Navigate to [http://localhost:8000/user-service/graphql](http://localhost:8000/user-service/graphql).
 * **Chat Service GraphQL Playground**: Navigate to [http://localhost:8000/chat-service/graphql](http://localhost:8000/chat-service/graphql).
 
+> [!IMPORTANT]
+> **Testing Multi-User Sessions Side-by-Side (Alice & Bob)**:
+> To verify real-time, cross-replica messages between two users (e.g., Alice and Bob) simultaneously:
+> 1. **Option A (Recommended)**: Use two different browsers (e.g., log in as Alice in Chrome, and Bob in Firefox or Safari).
+> 2. **Option B**: Use one normal Chrome window and one Incognito Chrome window. 
+> 
+> *Do not use two tabs in the same browser session or two standard Incognito windows, as browsers share local storage across them and will overwrite the active session.*
+
 ### Step 3: Verify Healthchecks
 * **User Service Health**: Check [http://localhost:8000/user-service/health](http://localhost:8000/user-service/health) to verify Postgres connection health.
 * **Chat Service Health**: Check [http://localhost:8000/chat-service/health](http://localhost:8000/chat-service/health) to verify Postgres and Redis connection health.

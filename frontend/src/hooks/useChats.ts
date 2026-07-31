@@ -69,8 +69,8 @@ const SEND_MESSAGE = gql`
 `;
 
 const GET_CHAT_MESSAGES = gql`
-  query GetChatMessages($chatId: ID!, $senderId: ID!) {
-    chatMessages(chatId: $chatId, senderId: $senderId) {
+  query GetChatMessages($chatId: ID!, $senderId: ID!, $limit: Int!, $beforeSequence: Int) {
+    chatMessages(chatId: $chatId, senderId: $senderId, limit: $limit, beforeSequence: $beforeSequence) {
       id
       chatId
       senderId
@@ -112,12 +112,13 @@ export function useSendMessageMutation() {
   return useMutation<{ sendMessage: Message }, { input: { chatId: string; senderId: string; content: string } }>(SEND_MESSAGE);
 }
 
-export function useGetChatMessagesQuery(chatId: string, senderId: string) {
-  const result = useQuery<{ chatMessages: Message[] }, { chatId: string; senderId: string }>(
+export function useGetChatMessagesQuery(chatId: string, senderId: string, limit = 50, beforeSequence?: number) {
+  const result = useQuery<{ chatMessages: Message[] }, { chatId: string; senderId: string; limit: number; beforeSequence?: number }>(
     GET_CHAT_MESSAGES,
     {
-      variables: { chatId, senderId },
+      variables: { chatId, senderId, limit, beforeSequence },
       skip: !chatId || !senderId,
+      fetchPolicy: 'network-only',
     }
   );
 

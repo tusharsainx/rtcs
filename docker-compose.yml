@@ -37,6 +37,7 @@ services:
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
       PORT: "4000"
+      INSTANCE_NAME: "user-service-instance-1"
     depends_on:
       - postgres
     restart: on-failure
@@ -51,6 +52,7 @@ services:
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
       PORT: "4000"
+      INSTANCE_NAME: "user-service-instance-2"
     depends_on:
       - postgres
     restart: on-failure
@@ -68,6 +70,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       PORT: "4000"
+      INSTANCE_NAME: "chat-service-1"
     depends_on:
       - postgres
       - redis
@@ -85,6 +88,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       PORT: "4000"
+      INSTANCE_NAME: "chat-service-2"
     depends_on:
       - postgres
       - redis

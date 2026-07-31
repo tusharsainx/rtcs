@@ -34,4 +34,9 @@ export class UsersResolver {
   async getUsers(): Promise<User[]> {
     return this.usersService.getAllUsers();
   }
+
+  @Query(() => String, { name: 'userServiceInstance' })
+  getUserServiceInstance(): string {
+    return process.env.INSTANCE_NAME || 'user-service-instance-1';
+  }
 }

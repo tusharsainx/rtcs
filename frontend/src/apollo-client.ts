@@ -31,17 +31,17 @@ const routingLink = new ApolloLink((operation, forward) => {
   return chatHttpLink.request(operation, forward);
 });
 
-// Split Link: route subscriptions to WebSocket Link, other operations to the HTTP routing link
 const splitLink = split(
   ({ query }) => {
     const definition = getMainDefinition(query);
     return (
       definition.kind === 'OperationDefinition' &&
-      definition.operation === 'subscription'
+      (definition.operation === 'subscription' ||
+        (definition.operation === 'query' && definition.name?.value === 'GetChatServiceInstance'))
     );
   },
-  chatWsLink, // routes subscriptions
-  routingLink  // routes queries & mutations (routed based on context)
+  chatWsLink, // routes subscriptions & GetChatServiceInstance query to WebSocket
+  routingLink  // routes other queries & mutations
 );
 
 export const client = new ApolloClient({

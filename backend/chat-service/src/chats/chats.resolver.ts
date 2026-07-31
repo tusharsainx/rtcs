@@ -1,5 +1,5 @@
 // AI-generated: ChatsResolver routing mutations and queries, and exposing real-time subscriptions
-import { Resolver, Mutation, Query, Subscription, Args, ID } from '@nestjs/graphql';
+import { Resolver, Mutation, Query, Subscription, Args, ID, Int } from '@nestjs/graphql';
 import { Inject } from '@nestjs/common';
 import { ChatsService } from './chats.service';
 import { Chat } from './entities/chat.entity';
@@ -47,13 +47,20 @@ export class ChatsResolver {
   async getChatMessages(
     @Args('chatId', { type: () => ID }) chatId: string,
     @Args('senderId', { type: () => ID }) senderId: string,
+    @Args('limit', { type: () => Int, defaultValue: 50 }) limit: number,
+    @Args('beforeSequence', { type: () => Int, nullable: true }) beforeSequence?: number,
   ): Promise<Message[]> {
-    return this.chatsService.getChatMessages(chatId, senderId);
+    return this.chatsService.getChatMessages(chatId, senderId, limit, beforeSequence);
   }
 
   @Query(() => [Chat], { name: 'chats' })
   async getChats(): Promise<Chat[]> {
     return this.chatsService.getAllChats();
+  }
+
+  @Query(() => String, { name: 'chatServiceInstance' })
+  getChatServiceInstance(): string {
+    return process.env.INSTANCE_NAME || 'chat-service-instance-1';
   }
 
   @Subscription(() => Message, {

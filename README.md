@@ -3,9 +3,9 @@
 This repository contains a containerized, horizontally scalable real-time chat application built using a microservices-inspired architecture.
 
 ### System Demo Video
-Below is a demonstration video of the application showing sign-up, sign-in, real-time message broadcasting, dynamic connection health-checks, and horizontal load-balancing.
+Below is a demonstration video of the application showing sign-up, sign-in, real-time message broadcasting and horizontal load-balancing.
 
-<video src="Demo.mov" controls width="100%"></video>
+<video src="https://github.com/user-attachments/assets/5c41d02c-3a46-4c0a-97d6-595ca20dbb86" controls width="100%"></video>
 
 ---
 

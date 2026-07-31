@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import type { Chat, Message } from '../../hooks/useChats';
 import type { User } from '../../hooks/useUsers';
 import './ChatWindow.css';
@@ -40,17 +40,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   loadingMore,
   hasMore,
 }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const prevScrollHeightRef = useRef<number | null>(null);
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    if (target.scrollTop === 0 && hasMore && !loadingMore) {
-      const previousScrollHeight = target.scrollHeight;
-      onLoadMore().then(() => {
-        requestAnimationFrame(() => {
-          target.scrollTop = target.scrollHeight - previousScrollHeight;
-        });
-      });
+    if (target.scrollTop === 0 && hasMore && !loadingMore && messages.length > 0) {
+      prevScrollHeightRef.current = target.scrollHeight;
+      onLoadMore();
     }
   };
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (container && prevScrollHeightRef.current !== null) {
+      container.scrollTop = container.scrollHeight - prevScrollHeightRef.current;
+      prevScrollHeightRef.current = null;
+    }
+  }, [messages]);
 
   if (!selectedChat) {
     return (
@@ -93,7 +100,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       ) : (
         <>
-          <div className="messages-scroller" onScroll={handleScroll}>
+          <div ref={containerRef} className="messages-scroller" onScroll={handleScroll}>
             {loadingMore && (
               <div className="chat-messages-loader-more">
                 <span className="status-dot animate-pulse"></span>

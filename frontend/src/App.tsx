@@ -158,11 +158,13 @@ function App() {
   };
 
   // Only scroll down to bottom on initial room load or on active subscription message send/receive
+  const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+
   useEffect(() => {
-    if (messages.length > 0 && !loadingMore) {
+    if (messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages.length, loadingMore]);
+  }, [lastMessageId, selectedChat?.id]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();

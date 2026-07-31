@@ -65,7 +65,12 @@ export class ChatsService {
     return message;
   }
 
-  async getChatMessages(chatId: string, senderId: string): Promise<Message[]> {
+  async getChatMessages(
+    chatId: string,
+    senderId: string,
+    limit: number,
+    beforeSequence?: number,
+  ): Promise<Message[]> {
     const chat = await this.chatRepository.findChatById(chatId);
     if (!chat) {
       throw new NotFoundException(`Chat with ID ${chatId} not found`);
@@ -76,12 +81,17 @@ export class ChatsService {
       throw new ForbiddenException(`User ${senderId} is not a participant in chat ${chatId}`);
     }
 
-    // Cache-Aside Look up: Try loading from Redis first
+    // 1. If requesting an older page (cold history request), bypass Redis and query PostgreSQL directly
+    if (beforeSequence !== undefined && beforeSequence !== null) {
+      return this.messageRepository.findMessagesBeforeSequence(chatId, beforeSequence, limit);
+    }
+
+    // 2. Initial Page Load (Hot History Request): Try loading from Redis first
     const redisKey = `chat:${chatId}:messages`;
     try {
       const cached = await this.redisClient.lrange(redisKey, 0, -1);
       if (cached && cached.length > 0) {
-        return cached.map((msgStr) => {
+        const cachedMessages = cached.map((msgStr) => {
           const parsed = JSON.parse(msgStr);
           // Revive Date type from ISO string
           if (parsed.createdAt) {
@@ -89,20 +99,24 @@ export class ChatsService {
           }
           return parsed;
         });
+
+        // Return the last 'limit' messages from the cached list
+        return cachedMessages.slice(-limit);
       }
     } catch (err: any) {
       console.warn(`Redis Cache Read failed (resilient fallback active): ${err.message}`);
     }
 
-    // Cache Miss: Query PostgreSQL database
-    const messages = await this.messageRepository.findMessagesByChatId(chatId);
+    // 3. Cache Miss: Query PostgreSQL database for all messages to backfill the cache correctly
+    const allMessages = await this.messageRepository.findMessagesByChatId(chatId);
 
-    // Backfill Cache: Save retrieved messages to Redis
-    if (messages.length > 0) {
+    // Backfill Cache: Save up to the last 50 messages to Redis (prevent RAM bloat)
+    if (allMessages.length > 0) {
       try {
         const pipeline = this.redisClient.pipeline();
         pipeline.del(redisKey);
-        messages.forEach((msg) => pipeline.rpush(redisKey, JSON.stringify(msg)));
+        const recentMessages = allMessages.slice(-50);
+        recentMessages.forEach((msg) => pipeline.rpush(redisKey, JSON.stringify(msg)));
         pipeline.ltrim(redisKey, -50, -1);
         pipeline.expire(redisKey, 86400); // 24 hours expiration
         await pipeline.exec();
@@ -111,6 +125,7 @@ export class ChatsService {
       }
     }
 
-    return messages;
+    // Return the last 'limit' messages for the initial page load
+    return allMessages.slice(-limit);
   }
 }

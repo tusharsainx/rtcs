@@ -10,13 +10,16 @@ interface ChatWindowProps {
   isNotParticipant: boolean;
   handleJoinChat: () => void;
   messagesLoading: boolean;
-  messages: Message[] | undefined;
+  messages: Message[];
   userMap: Map<string, string>;
   messageContent: string;
   setMessageContent: (val: string) => void;
   handleSendMessage: (e: React.FormEvent) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   formatDate: (isoString: string) => string;
+  onLoadMore: () => Promise<void>;
+  loadingMore: boolean;
+  hasMore: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -33,7 +36,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   handleSendMessage,
   messagesEndRef,
   formatDate,
+  onLoadMore,
+  loadingMore,
+  hasMore,
 }) => {
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (target.scrollTop === 0 && hasMore && !loadingMore) {
+      const previousScrollHeight = target.scrollHeight;
+      onLoadMore().then(() => {
+        requestAnimationFrame(() => {
+          target.scrollTop = target.scrollHeight - previousScrollHeight;
+        });
+      });
+    }
+  };
+
   if (!selectedChat) {
     return (
       <div className="chat-empty">
@@ -75,10 +93,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       ) : (
         <>
-          <div className="messages-scroller">
-            {messagesLoading ? (
+          <div className="messages-scroller" onScroll={handleScroll}>
+            {loadingMore && (
+              <div className="chat-messages-loader-more">
+                <span className="status-dot animate-pulse"></span>
+                <span>Loading older history...</span>
+              </div>
+            )}
+            {messagesLoading && (!messages || messages.length === 0) ? (
               <p className="chat-messages-loader">Loading messages...</p>
-            ) : messages && messages.length === 0 ? (
+            ) : !messages || messages.length === 0 ? (
               <p className="chat-messages-empty">No messages yet. Send one to start the conversation!</p>
             ) : (
               messages?.map((msg: Message) => {

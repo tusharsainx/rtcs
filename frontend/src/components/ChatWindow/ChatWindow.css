@@ -176,3 +176,16 @@
   padding: 10px 20px;
   border-radius: 8px;
 }
+
+.chat-messages-loader-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border-color);
+  margin-bottom: 10px;
+}

@@ -25,6 +25,7 @@ describe('ChatsService', () => {
     const mockMessageRepo: Partial<jest.Mocked<IMessageRepository>> = {
       createMessage: jest.fn(),
       findMessagesByChatId: jest.fn(),
+      findMessagesBeforeSequence: jest.fn(),
     };
 
     const mockRedisClient = {

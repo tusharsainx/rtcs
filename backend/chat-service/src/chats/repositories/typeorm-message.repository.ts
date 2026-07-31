@@ -1,7 +1,7 @@
-// AI-generated: TypeORM implementation of IMessageRepository with sequence-based ordering
+// AI-generated: TypeORM implementation of IMessageRepository with sequence-based ordering and filtering
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { Message } from '../entities/message.entity';
 import { IMessageRepository } from '../interfaces/message-repository.interface';
 
@@ -22,5 +22,23 @@ export class TypeORMMessageRepository implements IMessageRepository {
       where: { chatId },
       order: { sequence: 'ASC' },
     });
+  }
+
+  async findMessagesBeforeSequence(chatId: string, beforeSequence: number, limit: number): Promise<Message[]> {
+    const messages = await this.repository.find({
+      where: { chatId, sequence: LessThan(beforeSequence) },
+      order: { sequence: 'DESC' },
+      take: limit,
+    });
+    return messages.reverse();
+  }
+
+  async findRecentMessages(chatId: string, limit: number): Promise<Message[]> {
+    const messages = await this.repository.find({
+      where: { chatId },
+      order: { sequence: 'DESC' },
+      take: limit,
+    });
+    return messages.reverse();
   }
 }

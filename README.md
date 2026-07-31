@@ -2,6 +2,11 @@
 
 This repository contains a containerized, horizontally scalable real-time chat application built using a microservices-inspired architecture.
 
+### System Demo Video
+Below is a demonstration video of the application showing sign-up, sign-in, real-time message broadcasting, dynamic connection health-checks, and horizontal load-balancing.
+
+<video src="Demo.mov" controls width="100%"></video>
+
 ---
 
 ## 1. High-Level Design (HLD)

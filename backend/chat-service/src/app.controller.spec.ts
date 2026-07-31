@@ -1,0 +1,40 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { DataSource } from 'typeorm';
+
+describe('AppController', () => {
+  let appController: AppController;
+
+  beforeEach(async () => {
+    const mockDataSource = {
+      query: jest.fn().mockResolvedValue([{ '1': 1 }]),
+    };
+    const mockRedis = {
+      ping: jest.fn().mockResolvedValue('PONG'),
+    };
+
+    const app: TestingModule = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [
+        AppService,
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+        {
+          provide: 'REDIS_PUBLISHER',
+          useValue: mockRedis,
+        },
+      ],
+    }).compile();
+
+    appController = app.get<AppController>(AppController);
+  });
+
+  describe('root', () => {
+    it('should return "Hello World!"', () => {
+      expect(appController.getHello()).toBe('Hello World!');
+    });
+  });
+});

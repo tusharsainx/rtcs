@@ -1,0 +1,60 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Chat {
+  id: ID!
+  name: String
+  createdAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type ChatParticipant {
+  id: ID!
+  chatId: String!
+  userId: String!
+  joinedAt: DateTime!
+}
+
+type Message {
+  id: ID!
+  chatId: String!
+  senderId: String!
+  content: String!
+  sequence: Int!
+  createdAt: DateTime!
+}
+
+type Query {
+  chatMessages(chatId: ID!, senderId: ID!): [Message!]!
+  chats: [Chat!]!
+}
+
+type Mutation {
+  createChat(input: CreateChatInput!): Chat!
+  joinChat(input: JoinChatInput!): ChatParticipant!
+  sendMessage(input: SendMessageInput!): Message!
+}
+
+input CreateChatInput {
+  name: String
+}
+
+input JoinChatInput {
+  chatId: String!
+  userId: String!
+}
+
+input SendMessageInput {
+  chatId: String!
+  senderId: String!
+  content: String!
+}
+
+type Subscription {
+  messageAdded(chatId: ID!): Message!
+}

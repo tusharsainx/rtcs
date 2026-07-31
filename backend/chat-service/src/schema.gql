@@ -30,8 +30,9 @@ type Message {
 }
 
 type Query {
-  chatMessages(chatId: ID!, senderId: ID!): [Message!]!
+  chatMessages(chatId: ID!, senderId: ID!, limit: Int! = 50, beforeSequence: Int): [Message!]!
   chats: [Chat!]!
+  chatServiceInstance: String!
 }
 
 type Mutation {

@@ -9,7 +9,52 @@ This repository contains a containerized, horizontally scalable real-time chat a
 ### System Architecture Diagram
 The system uses an **Nginx Gateway** as a single entry point (port `8000`), routing path-based HTTP requests and WebSocket connections to load-balanced service instances. Inter-service real-time communication is coordinated via a **Redis PubSub** broker.
 
-![High-Level Design System Architecture Diagram](hld_diagram.png)
+```mermaid
+graph TD
+    Client[React Frontend / Apollo Client]
+    
+    subgraph Gateway [API Gateway Layer]
+        Nginx[Nginx API Gateway - Port 8000]
+    end
+
+    subgraph ServiceLayer [Load-Balanced Service Layer]
+        subgraph UserServicePool [User Service Instances]
+            US1[User Service - Instance 1]
+            US2[User Service - Instance 2]
+        end
+        subgraph ChatServicePool [Chat Service Instances]
+            CS1[Chat Service - Instance 1]
+            CS2[Chat Service - Instance 2]
+        end
+    end
+
+    subgraph Storage [Storage & Cache Layer]
+        PG[(PostgreSQL Database)]
+        Redis[(Redis Cache & Pub/Sub Broker)]
+    end
+
+    %% Client connection flows
+    Client -->|GraphQL HTTP| Nginx
+    Client -->|GraphQL WS Subscriptions| Nginx
+
+    %% Gateway load balancing routing
+    Nginx -->|Round-Robin| US1
+    Nginx -->|Round-Robin| US2
+    Nginx -->|Round-Robin| CS1
+    Nginx -->|Round-Robin| CS2
+
+    %% Database connections
+    US1 -->|TypeORM| PG
+    US2 -->|TypeORM| PG
+    CS1 -->|TypeORM| PG
+    CS2 -->|TypeORM| PG
+
+    %% Redis connections
+    CS1 -->|Cache-Aside & Write-Through| Redis
+    CS2 -->|Cache-Aside & Write-Through| Redis
+    CS1 <-->|Pub/Sub Event Sync| Redis
+    CS2 <-->|Pub/Sub Event Sync| Redis
+```
 
 ### Core Architecture Components
 1. **Nginx API Gateway**:
@@ -27,7 +72,27 @@ The system uses an **Nginx Gateway** as a single entry point (port `8000`), rout
 
 ---
 
-## 2. Low-Level Design (LLD)
+## 2. Technology Stack
+
+This application is built on a modern, decoupled, and highly performant stack:
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend Client** | React 19 (TypeScript) | UI library with strong type safety. |
+| | Apollo Client | Managed state, caching, GraphQL queries/mutations (via HTTP), WebSocket subscriptions. |
+| | Vanilla CSS | Scoped styling side-by-side with components for fast rendering and caching. |
+| **Backend Services**| NestJS 11 (TypeScript) | Enterprise-grade server framework with Dependency Injection. |
+| | GraphQL (Apollo Server) | Decoupled graph-based API layers. |
+| | TypeORM | Object-Relational Mapping (ORM) for data persistence. |
+| | BcryptJS | Secure password hashing on sign-up and comparison on login. |
+| **Database & Cache** | PostgreSQL 16 | Primary relational database for durable metadata and history. |
+| | Redis 7 | In-memory cache (recent 50 messages) and transient Pub/Sub event broker. |
+| **Infrastructure** | Nginx | API gateway router and round-robin load-balancer. |
+| | Docker & Compose | Containerized compilation, deployment, and local orchestration. |
+
+---
+
+## 3. Low-Level Design (LLD)
 
 ### Database Entity Relationship Model
 The database consists of 4 main tables mapped using TypeORM:
@@ -80,9 +145,42 @@ Both services strictly implement the **Dependency Inversion Principle (DIP)**. C
 * `IEventPublisher`: Interface defining PubSub broker publishing.
 * `RedisEventPublisher`: Concrete implementation wrapping `graphql-redis-subscriptions`.
 
-#### Persist-Then-Publish Pattern:
+#### Persist-Then-Publish & Cache-Through Pattern:
 When a message is sent, the operations occur in a strict sequential order:
-![Persist-Then-Publish Sequence Diagram](sequence_diagram.png)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Resolver as GraphQL ChatsResolver
+    participant Service as ChatsService
+    participant PG as PostgreSQL (TypeORM)
+    participant Redis as Redis Cache & Broker
+
+    Client->>Resolver: sendMessage(chatId, senderId, content)
+    activate Resolver
+    Resolver->>Service: sendMessage(chatId, senderId, content)
+    activate Service
+    
+    Service->>PG: createMessage(chatId, senderId, content)
+    activate PG
+    PG-->>Service: return saved message (with PostgreSQL sequence)
+    deactivate PG
+    
+    Note over Service, Redis: Cache Write-Through (Trims to 50, sets 24h TTL)
+    Service->>Redis: rpush(chat:chatId:messages, message) & ltrim & expire
+    
+    Note over Service, Redis: Broadcast to active replicas
+    Service->>Redis: publishEvent(message)
+    
+    Service-->>Resolver: return saved message
+    deactivate Service
+    Resolver-->>Client: GraphQL Mutation Result (Mutation complete)
+    deactivate Resolver
+
+    Note over Redis, Client: Subscription Broadcasting
+    Redis-->>Client: Event pushed via active WebSocket (WS) Subscriptions
+```
 
 ---
 
@@ -99,7 +197,7 @@ The frontend is a HTML5 / CSS3 / React SPA leveraging Apollo Client:
 
 ---
 
-## 3. How to Run the Project (Docker Compose Mode)
+## 4. How to Run the Project (Docker Compose Mode)
 
 By default, the stack starts up with **2 load-balanced instances** for both `user-service` and `chat-service` out-of-the-box using standard Docker Compose. Nginx handles internal routing via round-robin upstream definitions.
 
@@ -143,7 +241,7 @@ docker compose down
 
 ---
 
-## 4. Running the Tests
+## 5. Running the Tests
 
 To run the unit, integration, and E2E test suites locally inside the service directories:
 ```bash
@@ -159,7 +257,7 @@ npm run test:e2e          # E2E GraphQL API Tests
 
 ---
 
-## 5. Architecture & Design Choices (Justification)
+## 6. Architecture & Design Choices (Justification)
 
 This monorepo implements a highly decoupled, horizontally scalable system designed with the following justifications:
 
@@ -182,7 +280,7 @@ This monorepo implements a highly decoupled, horizontally scalable system design
 
 ---
 
-## 6. Testing Approach
+## 7. Testing Approach
 
 To prove the stability of the application, we implement a layered testing strategy:
 
@@ -195,7 +293,7 @@ To prove the stability of the application, we implement a layered testing strate
 
 ---
 
-## 7. Trade-offs & Limitations
+## 8. Trade-offs & Limitations
 
 ### 1. Redis Pub/Sub vs. Redis Streams
 We explicitly chose **Redis Pub/Sub** instead of **Redis Streams** for active client synchronization:

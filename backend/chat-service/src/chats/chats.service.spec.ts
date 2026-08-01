@@ -215,7 +215,7 @@ describe('ChatsService', () => {
       mockChatRepository.findParticipant.mockResolvedValue(mockParticipant);
       mockMessageRepository.findMessagesByChatId.mockResolvedValue(mockMessages);
 
-      const result = await service.getChatMessages(chatId, requesterId);
+      const result = await service.getChatMessages(chatId, requesterId, 50);
 
       expect(mockChatRepository.findChatById).toHaveBeenCalledWith(chatId);
       expect(mockChatRepository.findParticipant).toHaveBeenCalledWith(chatId, requesterId);
@@ -229,7 +229,7 @@ describe('ChatsService', () => {
       mockChatRepository.findChatById.mockResolvedValue(mockChat);
       mockChatRepository.findParticipant.mockResolvedValue(null);
 
-      await expect(service.getChatMessages(chatId, requesterId)).rejects.toThrow(ForbiddenException);
+      await expect(service.getChatMessages(chatId, requesterId, 50)).rejects.toThrow(ForbiddenException);
 
       expect(mockChatRepository.findChatById).toHaveBeenCalledWith(chatId);
       expect(mockChatRepository.findParticipant).toHaveBeenCalledWith(chatId, requesterId);
